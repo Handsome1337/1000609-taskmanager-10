@@ -1,5 +1,7 @@
+import {createElement} from './../util.js';
+
 /* Возвращает шаблон разметки меню сайта */
-export const createMenuTemplate = () => {
+const createMenuTemplate = () => {
   return (
     `<section class="control__btn-wrap">
       <input
@@ -31,3 +33,30 @@ export const createMenuTemplate = () => {
     </section>`
   );
 };
+
+/* Экспортирует класс (компонент) меню сайта */
+export default class SiteMenu {
+  constructor() {
+    /* Сохраняет DOM-узел */
+    this._element = null;
+  }
+
+  /* Возвращает разметку шаблона */
+  getTemplate() {
+    return createMenuTemplate();
+  }
+
+  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
+  getElement() {
+    if (!this._element) {
+      this._element = createElement(this.getTemplate());
+    }
+
+    return this._element;
+  }
+
+  /* Удаляет ссылку на созданный DOM-узел */
+  removeElement() {
+    this._element = null;
+  }
+}

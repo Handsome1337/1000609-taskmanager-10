@@ -1,3 +1,5 @@
+import {createElement} from './../util.js';
+
 /* Возвращает разметку фильтра */
 const createFilterMarkup = (filter, isChecked) => {
   const {name, count} = filter;
@@ -17,7 +19,7 @@ const createFilterMarkup = (filter, isChecked) => {
 };
 
 /* Возвращает шаблон резметки фильтров */
-export const createFilterTemplate = (filters) => {
+const createFilterTemplate = (filters) => {
   const filtersMarkup = filters.map((it, i) => createFilterMarkup(it, i === 0)).join(`\n`);
 
   return (
@@ -26,3 +28,32 @@ export const createFilterTemplate = (filters) => {
     </section>`
   );
 };
+
+/* Экспортирует класс (компонент) фильтров сайта */
+export default class Filter {
+  constructor(filters) {
+    /* Сохраняет переданные в параметр конструктора данные */
+    this._filters = filters;
+    /* Сохраняет DOM-узел */
+    this._element = null;
+  }
+
+  /* Возвращает разметку шаблона */
+  getTemplate() {
+    return createFilterTemplate(this._filters);
+  }
+
+  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
+  getElement() {
+    if (!this._element) {
+      this._element = createElement(this.getTemplate());
+    }
+
+    return this._element;
+  }
+
+  /* Удаляет ссылку на созданный DOM-узел */
+  removeElement() {
+    this._element = null;
+  }
+}

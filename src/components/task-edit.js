@@ -1,5 +1,5 @@
 import {COLORS, DAYS, MONTH_NAMES} from '../const.js';
-import {formatTime} from '../util.js';
+import {formatTime, createElement} from '../util.js';
 
 /* Возвращает разметку выбора цвета */
 const createColorsMarkup = (colors, currentColor) => {
@@ -39,7 +39,7 @@ const createRepeatingDaysMarkup = (days, repeatingDays) => {
           ${isChecked ? `checked` : ``}
         />
         <label class="card__repeat-day" for="repeat-${day}-4"
-          >%{day}</label
+          >${day}</label
         >`
       );
     })
@@ -71,7 +71,7 @@ const createHashtags = (tags) => {
 };
 
 /* Возвращает шаблон разметки формы редактирования задачи */
-export const createTaskEditTemplate = (task) => {
+const createTaskEditTemplate = (task) => {
   const {description, tags, dueDate, color, repeatingDays} = task;
 
   /* Проверяет, просрочена ли дата запланированного выполнения */
@@ -182,3 +182,32 @@ export const createTaskEditTemplate = (task) => {
     </article>`
   );
 };
+
+/* Экспортирует класс (компонент) формы редактирования задачи */
+export default class TaskEdit {
+  constructor(task) {
+    /* Сохраняет переданные в параметр конструктора данные */
+    this._task = task;
+    /* Сохраняет DOM-узел */
+    this._element = null;
+  }
+
+  /* Возвращает разметку шаблона */
+  getTemplate() {
+    return createTaskEditTemplate(this._task);
+  }
+
+  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
+  getElement() {
+    if (!this._element) {
+      this._element = createElement(this.getTemplate());
+    }
+
+    return this._element;
+  }
+
+  /* Удаляет ссылку на созданный DOM-узел */
+  removeElement() {
+    this._element = null;
+  }
+}

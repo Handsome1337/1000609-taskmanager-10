@@ -1,5 +1,5 @@
 import {MONTH_NAMES} from '../const.js';
-import {formatTime} from '../util.js';
+import {formatTime, createElement} from '../util.js';
 
 /* Возвращает разметку хештега */
 const createHashtagsMarkup = (hashtags) => {
@@ -17,7 +17,7 @@ const createHashtagsMarkup = (hashtags) => {
 };
 
 /* Возвращает шаблон разметки задачи */
-export const createTaskTemplate = (task) => {
+const createTaskTemplate = (task) => {
   const {description, tags, dueDate, color, repeatingDays} = task;
 
   /* Проверяет, просрочена ли дата запланированного выполнения */
@@ -84,3 +84,32 @@ export const createTaskTemplate = (task) => {
     </article>`
   );
 };
+
+/* Экспортирует класс (компонент) задачи */
+export default class Task {
+  constructor(task) {
+    /* Сохраняет переданные в параметр конструктора данные */
+    this._task = task;
+    /* Сохраняет DOM-узел */
+    this._element = null;
+  }
+
+  /* Возвращает разметку шаблона */
+  getTemplate() {
+    return createTaskTemplate(this._task);
+  }
+
+  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
+  getElement() {
+    if (!this._element) {
+      this._element = createElement(this.getTemplate());
+    }
+
+    return this._element;
+  }
+
+  /* Удаляет ссылку на созданный DOM-узел */
+  removeElement() {
+    this._element = null;
+  }
+}
