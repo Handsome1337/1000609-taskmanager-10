@@ -1,6 +1,9 @@
 import SiteMenuComponent from './components/site-menu.js';
 import FilterComponent from './components/filter.js';
 import BoardComponent from './components/board.js';
+import NoTasksComponent from './components/no-tasks.js';
+import SortComponent from './components/sort.js';
+import TasksComponent from './components/tasks.js';
 import TaskEditComponent from './components/task-edit.js';
 import TaskComponent from './components/task.js';
 import LoadMoreButtonComponent from './components/load-more-button';
@@ -15,7 +18,27 @@ const SHOWING_TASKS_COUNT_ON_START = 8;
 const SHOWING_TASKS_COUNT_BY_BUTTON = 8;
 
 /* Отрисовывает карточку задачи */
-const renderTask = (task) => {
+const renderTask = (taskListElement, task) => {
+  /* Заменяет форму редактирования на карточку задачи */
+  const replaceEditToTask = () => {
+    taskListElement.replaceChild(taskComponent.getElement(), taskEditComponent.getElement());
+  };
+  /* Заменяет карточку задачи на форму редактирования */
+  const replaceTaskToEdit = () => {
+    taskListElement.replaceChild(taskEditComponent.getElement(), taskComponent.getElement());
+  };
+
+  /* Функция-обработчик нажатия на ESC */
+  const onEscKeyDown = (evt) => {
+    /* Проверяет, нажата ли клавиша ESC */
+    const isEscKey = evt.key === `Escape` || evt.key === `Esc`;
+
+    if (isEscKey) {
+      replaceEditToTask();
+      document.removeEventListener(`keydown`, onEscKeyDown);
+    }
+  };
+
   /* Сохраняет компоненты задачи и формы редактирования задачи */
   const taskComponent = new TaskComponent(task);
   const taskEditComponent = new TaskEditComponent(task);
@@ -27,12 +50,16 @@ const renderTask = (task) => {
 
   /* Заменяет карточку задачи на форму редактирования при клике на кнопку "Edit" */
   editButtonElement.addEventListener(`click`, () => {
-    taskListElement.replaceChild(taskEditComponent.getElement(), taskComponent.getElement());
+    replaceTaskToEdit();
+    /* Добавляет обработчик нажатия на ESC */
+    document.addEventListener(`keydown`, onEscKeyDown);
   });
 
   /* Заменяет форму редактирования на карточку задачи при отправке формы */
   editFormElement.addEventListener(`submit`, () => {
-    taskListElement.replaceChild(taskComponent.getElement(), taskEditComponent.getElement());
+    replaceEditToTask();
+    /* Удаляет обработчик нажатия на ESC */
+    document.removeEventListener(`keydown`, onEscKeyDown);
   });
 
   render(taskListElement, taskComponent.getElement());
@@ -41,6 +68,8 @@ const renderTask = (task) => {
 /* Сохраняют моки фильтров и задач */
 const filters = generateFilters();
 const tasks = generateTasks(TASK_COUNT);
+/* Проверяет, все ли задачи выполнены */
+const isAllTasksArchived = tasks.every((task) => task.isArchive);
 /* Находит main и  шапку сайта */
 const siteMainElement = document.querySelector(`.main`);
 const siteHeaderElement = siteMainElement.querySelector(`.main__control`);
@@ -54,32 +83,42 @@ const boardComponent = new BoardComponent();
 /* Отрсовывает доску задач */
 render(siteMainElement, boardComponent.getElement());
 
-/* Сохраняет контейнер для задач */
-const taskListElement = boardComponent.getElement().querySelector(`.board__tasks`);
+/* Если все задачи в архиве, отрисовывает сообщение о том, что все задачи выполнены.
+Иначе отрисовывает сортировку, список задач и карточки задач */
+if (isAllTasksArchived) {
+  render(boardComponent.getElement(), new NoTasksComponent().getElement());
+} else {
+  render(boardComponent.getElement(), new SortComponent().getElement());
+  render(boardComponent.getElement(), new TasksComponent().getElement());
 
-/* Количество показанных задач */
-let showingTasksCount = SHOWING_TASKS_COUNT_ON_START;
-/* Добавляет на доску задачи */
-tasks.slice(0, showingTasksCount).forEach((task) => renderTask(task));
+  /* Сохраняет контейнер для задач */
+  const taskListElement = boardComponent.getElement().querySelector(`.board__tasks`);
 
-/* Сохраняет компонент кнопки "Load more" */
-const loadMoreButtonComponent = new LoadMoreButtonComponent();
-/* Добавляет на доску задач кнопку "Load more" */
-render(boardComponent.getElement(), loadMoreButtonComponent.getElement());
+  /* Количество показанных задач */
+  let showingTasksCount = SHOWING_TASKS_COUNT_ON_START;
 
-loadMoreButtonComponent.getElement().addEventListener(`click`, () => {
-  /* Сохраняет количество задач */
-  const prevTasksCount = showingTasksCount;
-  /* Сохраняет количество задач после нажатия на кнопку */
-  showingTasksCount = showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+  /* Добавляет на доску задачи */
+  tasks.slice(0, showingTasksCount).forEach((task) => renderTask(taskListElement, task));
 
-  /* Добавляет на доску новые задачи */
-  tasks.slice(prevTasksCount, showingTasksCount)
-    .forEach((task) => renderTask(task));
+  /* Сохраняет компонент кнопки "Load more" */
+  const loadMoreButtonComponent = new LoadMoreButtonComponent();
+  /* Добавляет на доску задач кнопку "Load more" */
+  render(boardComponent.getElement(), loadMoreButtonComponent.getElement());
 
-  /* Если показаны все задачи, удаляет кнопку */
-  if (showingTasksCount >= tasks.length) {
-    loadMoreButtonComponent.getElement().remove();
-    loadMoreButtonComponent.removeElement();
-  }
-});
+  loadMoreButtonComponent.getElement().addEventListener(`click`, () => {
+    /* Сохраняет количество задач */
+    const prevTasksCount = showingTasksCount;
+    /* Сохраняет количество задач после нажатия на кнопку */
+    showingTasksCount = showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+
+    /* Добавляет на доску новые задачи */
+    tasks.slice(prevTasksCount, showingTasksCount)
+      .forEach((task) => renderTask(taskListElement, task));
+
+    /* Если показаны все задачи, удаляет кнопку */
+    if (showingTasksCount >= tasks.length) {
+      loadMoreButtonComponent.getElement().remove();
+      loadMoreButtonComponent.removeElement();
+    }
+  });
+}
