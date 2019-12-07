@@ -1,14 +1,18 @@
 import {createElement} from './../util.js';
 
-/* Возвращает шаблон разметки доски для задач */
-const createBoardTemplate = () => {
+/* Возвращает шаблон разметки сортировки */
+const createSortTemplate = () => {
   return (
-    `<section class="board container"></section>`
+    `<div class="board__filter-list">
+      <a href="#" class="board__filter">SORT BY DEFAULT</a>
+      <a href="#" class="board__filter">SORT BY DATE up</a>
+      <a href="#" class="board__filter">SORT BY DATE down</a>
+    </div>`
   );
 };
 
-/* Экспортирует класс (компонент) доски задач */
-export default class Board {
+/* Экспортирует класс (компонент) сортировки */
+export default class Sort {
   constructor() {
     /* Сохраняет DOM-узел */
     this._element = null;
@@ -16,7 +20,7 @@ export default class Board {
 
   /* Возвращает разметку шаблона */
   getTemplate() {
-    return createBoardTemplate();
+    return createSortTemplate();
   }
 
   /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */

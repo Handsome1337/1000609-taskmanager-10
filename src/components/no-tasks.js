@@ -1,14 +1,16 @@
 import {createElement} from './../util.js';
 
-/* Возвращает шаблон разметки доски для задач */
-const createBoardTemplate = () => {
+/* Возвращает шаблон разметки сообщения о том, что все задачи выполнены */
+const createNoTasksTemplate = () => {
   return (
-    `<section class="board container"></section>`
+    `<p class="board__no-tasks">
+      Click «ADD NEW TASK» in menu to create your first task
+    </p>`
   );
 };
 
-/* Экспортирует класс (компонент) доски задач */
-export default class Board {
+/* Экспортирует класс (компонент) сообщения о том, что все задачи выполнены */
+export default class NoTasks {
   constructor() {
     /* Сохраняет DOM-узел */
     this._element = null;
@@ -16,7 +18,7 @@ export default class Board {
 
   /* Возвращает разметку шаблона */
   getTemplate() {
-    return createBoardTemplate();
+    return createNoTasksTemplate();
   }
 
   /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
