@@ -1,4 +1,4 @@
-import {createElement} from './../util.js';
+import AbstractComponent from './abstract-component.js';
 
 /* Возвращает шаблон разметки сортировки */
 const createSortTemplate = () => {
@@ -12,28 +12,9 @@ const createSortTemplate = () => {
 };
 
 /* Экспортирует класс (компонент) сортировки */
-export default class Sort {
-  constructor() {
-    /* Сохраняет DOM-узел */
-    this._element = null;
-  }
-
+export default class Sort extends AbstractComponent {
   /* Возвращает разметку шаблона */
   getTemplate() {
     return createSortTemplate();
-  }
-
-  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
-  getElement() {
-    if (!this._element) {
-      this._element = createElement(this.getTemplate());
-    }
-
-    return this._element;
-  }
-
-  /* Удаляет ссылку на созданный DOM-узел */
-  removeElement() {
-    this._element = null;
   }
 }

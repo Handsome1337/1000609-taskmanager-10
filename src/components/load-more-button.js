@@ -1,4 +1,4 @@
-import {createElement} from './../util.js';
+import AbstractComponent from './abstract-component.js';
 
 /* Возвращает шаблон разметки кнопки "Load more" */
 const createLoadMoreButtonTemplate = () => {
@@ -8,28 +8,14 @@ const createLoadMoreButtonTemplate = () => {
 };
 
 /* Экспортирует класс (компонент) кнопки "Load more" */
-export default class LoadMoreButton {
-  constructor() {
-    /* Сохраняет DOM-узел */
-    this._element = null;
-  }
-
+export default class LoadMoreButton extends AbstractComponent {
   /* Возвращает разметку шаблона */
   getTemplate() {
     return createLoadMoreButtonTemplate();
   }
 
-  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
-  getElement() {
-    if (!this._element) {
-      this._element = createElement(this.getTemplate());
-    }
-
-    return this._element;
-  }
-
-  /* Удаляет ссылку на созданный DOM-узел */
-  removeElement() {
-    this._element = null;
+  /* Устанавливает обработчик клика на кнопку */
+  setClickHandler(handler) {
+    this.getElement().addEventListener(`click`, handler);
   }
 }
