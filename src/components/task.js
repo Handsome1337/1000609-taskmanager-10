@@ -1,5 +1,6 @@
 import {MONTH_NAMES} from '../const.js';
-import {formatTime, createElement} from '../util.js';
+import {formatTime} from './../utils/common.js';
+import AbstractComponent from './abstract-component.js';
 
 /* Возвращает разметку хештега */
 const createHashtagsMarkup = (hashtags) => {
@@ -86,12 +87,12 @@ const createTaskTemplate = (task) => {
 };
 
 /* Экспортирует класс (компонент) задачи */
-export default class Task {
+export default class Task extends AbstractComponent {
   constructor(task) {
+    /* Вызывает конструктор родителя */
+    super();
     /* Сохраняет переданные в параметр конструктора данные */
     this._task = task;
-    /* Сохраняет DOM-узел */
-    this._element = null;
   }
 
   /* Возвращает разметку шаблона */
@@ -99,17 +100,9 @@ export default class Task {
     return createTaskTemplate(this._task);
   }
 
-  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
-  getElement() {
-    if (!this._element) {
-      this._element = createElement(this.getTemplate());
-    }
-
-    return this._element;
-  }
-
-  /* Удаляет ссылку на созданный DOM-узел */
-  removeElement() {
-    this._element = null;
+  /* Устанавливает обработчик клика на кнопку "Edit" */
+  setEditButtonClickHandler(handler) {
+    this.getElement().querySelector(`.card__btn--edit`)
+      .addEventListener(`click`, handler);
   }
 }

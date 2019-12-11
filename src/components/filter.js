@@ -1,4 +1,4 @@
-import {createElement} from './../util.js';
+import AbstractComponent from './abstract-component.js';
 
 /* Возвращает разметку фильтра */
 const createFilterMarkup = (filter, isChecked) => {
@@ -30,30 +30,16 @@ const createFilterTemplate = (filters) => {
 };
 
 /* Экспортирует класс (компонент) фильтров сайта */
-export default class Filter {
+export default class Filter extends AbstractComponent {
   constructor(filters) {
+    /* Вызывает конструктор родителя */
+    super();
     /* Сохраняет переданные в параметр конструктора данные */
     this._filters = filters;
-    /* Сохраняет DOM-узел */
-    this._element = null;
   }
 
   /* Возвращает разметку шаблона */
   getTemplate() {
     return createFilterTemplate(this._filters);
-  }
-
-  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
-  getElement() {
-    if (!this._element) {
-      this._element = createElement(this.getTemplate());
-    }
-
-    return this._element;
-  }
-
-  /* Удаляет ссылку на созданный DOM-узел */
-  removeElement() {
-    this._element = null;
   }
 }

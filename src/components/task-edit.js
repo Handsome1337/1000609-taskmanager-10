@@ -1,5 +1,6 @@
 import {COLORS, DAYS, MONTH_NAMES} from '../const.js';
-import {formatTime, createElement} from '../util.js';
+import {formatTime} from './../utils/common.js';
+import AbstractComponent from './abstract-component.js';
 
 /* Возвращает разметку выбора цвета */
 const createColorsMarkup = (colors, currentColor) => {
@@ -184,12 +185,12 @@ const createTaskEditTemplate = (task) => {
 };
 
 /* Экспортирует класс (компонент) формы редактирования задачи */
-export default class TaskEdit {
+export default class TaskEdit extends AbstractComponent {
   constructor(task) {
+    /* Вызывает конструктор родителя */
+    super();
     /* Сохраняет переданные в параметр конструктора данные */
     this._task = task;
-    /* Сохраняет DOM-узел */
-    this._element = null;
   }
 
   /* Возвращает разметку шаблона */
@@ -197,17 +198,9 @@ export default class TaskEdit {
     return createTaskEditTemplate(this._task);
   }
 
-  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
-  getElement() {
-    if (!this._element) {
-      this._element = createElement(this.getTemplate());
-    }
-
-    return this._element;
-  }
-
-  /* Удаляет ссылку на созданный DOM-узел */
-  removeElement() {
-    this._element = null;
+  /* Устанавливает обработчик отправки формы */
+  setFormSubmitHandler(handler) {
+    this.getElement().querySelector(`form`)
+      .addEventListener(`submit`, handler);
   }
 }

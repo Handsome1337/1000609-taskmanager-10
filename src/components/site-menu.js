@@ -1,4 +1,4 @@
-import {createElement} from './../util.js';
+import AbstractComponent from './abstract-component.js';
 
 /* Возвращает шаблон разметки меню сайта */
 const createMenuTemplate = () => {
@@ -35,28 +35,9 @@ const createMenuTemplate = () => {
 };
 
 /* Экспортирует класс (компонент) меню сайта */
-export default class SiteMenu {
-  constructor() {
-    /* Сохраняет DOM-узел */
-    this._element = null;
-  }
-
+export default class SiteMenu extends AbstractComponent {
   /* Возвращает разметку шаблона */
   getTemplate() {
     return createMenuTemplate();
-  }
-
-  /* Если DOM-узла раньше не существовало, сохраняет созданный из шаблона DOM-узел и возвращает его */
-  getElement() {
-    if (!this._element) {
-      this._element = createElement(this.getTemplate());
-    }
-
-    return this._element;
-  }
-
-  /* Удаляет ссылку на созданный DOM-узел */
-  removeElement() {
-    this._element = null;
   }
 }
