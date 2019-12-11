@@ -1,5 +1,5 @@
 import NoTasksComponent from './../components/no-tasks.js';
-import SortComponent from './../components/sort.js';
+import SortComponent, {SortType} from './../components/sort.js';
 import TasksComponent from './../components/tasks.js';
 import TaskEditComponent from './../components/task-edit.js';
 import TaskComponent from './../components/task.js';
@@ -54,6 +54,13 @@ const renderTask = (taskListElement, task) => {
   render(taskListElement, taskComponent);
 };
 
+/* Отрисовывает несколько задач */
+const renderTasks = (taskListElement, tasks) => {
+  tasks.forEach((task) => {
+    renderTask(taskListElement, task);
+  });
+};
+
 /* Экспортирует контроллёр доски */
 export default class BoardController {
   constructor(container) {
@@ -68,6 +75,32 @@ export default class BoardController {
 
   /* Отрисовывает компоненты в переданном в конструктор элементе */
   render(tasks) {
+    /* Отрисовывает кнопку "Load more" */
+    const renderLoadMoreButton = () => {
+      /* Проверяет, показаны ли все задачи */
+      if (showingTasksCount >= tasks.length) {
+        return;
+      }
+
+      /* Добавляет на доску задач кнопку "Load more" */
+      render(container, this._loadMoreButtonComponent);
+
+      this._loadMoreButtonComponent.setClickHandler(() => {
+        /* Сохраняет количество задач */
+        const prevTasksCount = showingTasksCount;
+        /* Сохраняет количество задач после нажатия на кнопку */
+        showingTasksCount = showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+
+        /* Добавляет на доску новые задачи */
+        renderTasks(taskListElement, tasks.slice(prevTasksCount, showingTasksCount));
+
+        /* Если показаны все задачи, удаляет кнопку */
+        if (showingTasksCount >= tasks.length) {
+          remove(this._loadMoreButtonComponent);
+        }
+      });
+    };
+
     const container = this._container.getElement();
     /* Проверяет, все ли задачи выполнены */
     const isAllTasksArchived = tasks.every((task) => task.isArchive);
@@ -89,23 +122,37 @@ export default class BoardController {
     let showingTasksCount = SHOWING_TASKS_COUNT_ON_START;
 
     /* Добавляет на доску задачи */
-    tasks.slice(0, showingTasksCount).forEach((task) => renderTask(taskListElement, task));
-
+    renderTasks(taskListElement, tasks.slice(0, showingTasksCount));
     /* Добавляет на доску задач кнопку "Load more" */
-    render(container, this._loadMoreButtonComponent);
+    renderLoadMoreButton();
 
-    this._loadMoreButtonComponent.setClickHandler(() => {
-      /* Сохраняет количество задач */
-      const prevTasksCount = showingTasksCount;
-      /* Сохраняет количество задач после нажатия на кнопку */
-      showingTasksCount = showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+    this._sortComponent.setSortTypeChangeHandler((sortType) => {
+      /* Отсортированные задачи */
+      let sortedTasks = [];
 
-      /* Добавляет на доску новые задачи */
-      tasks.slice(prevTasksCount, showingTasksCount)
-        .forEach((task) => renderTask(taskListElement, task));
+      /* Сортирует задачи в зависимости от типа сортировки */
+      switch (sortType) {
+        case SortType.DATE_UP:
+          sortedTasks = tasks.slice().sort((a, b) => a.dueDate - b.dueDate);
+          break;
+        case SortType.DATE_DOWN:
+          sortedTasks = tasks.slice().sort((a, b) => b.dueDate - a.dueDate);
+          break;
+        case SortType.DEFAULT:
+          sortedTasks = tasks.slice(0, showingTasksCount);
+          break;
+      }
 
-      /* Если показаны все задачи, удаляет кнопку */
-      if (showingTasksCount >= tasks.length) {
+      /* Удаляет неотсортированные задачи */
+      taskListElement.innerHTML = ``;
+
+      /* Добавляет на доску отсортированные задачи */
+      renderTasks(taskListElement, sortedTasks);
+
+      /* Если выбрана сортировка по умолчанию, отрисовывает кнопку "Load more", иначе удаляет её */
+      if (sortType === SortType.DEFAULT) {
+        renderLoadMoreButton();
+      } else {
         remove(this._loadMoreButtonComponent);
       }
     });
