@@ -142,7 +142,7 @@ export default class BoardController {
         break;
     }
 
-    const taskListElement = this.TasksComponent.getElement();
+    const taskListElement = this._tasksComponent.getElement();
 
     /* Удаляет неотсортированные задачи */
     taskListElement.innerHTML = ``;
