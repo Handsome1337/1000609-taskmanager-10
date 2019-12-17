@@ -1,5 +1,5 @@
-import {COLORS, DAYS, MONTH_NAMES} from '../const.js';
-import {formatTime} from './../utils/common.js';
+import {COLORS, DAYS} from '../const.js';
+import {formatDate, formatTime} from './../utils/common.js';
 import AbstractSmartComponent from './abstract-smart-component.js';
 
 /* Проверяет, есть ли повторяющиеся дни */
@@ -85,7 +85,7 @@ const createTaskEditTemplate = (task, options = {}) => {
 
   /* Проверяет, делать ли кнопку отправки формы недоступной */
   const isBlockSaveButton = (isDateShowing && isRepeatingTask) || (isRepeatingTask && !isRepeating(activeRepeatingDays));
-  const date = (isDateShowing && dueDate) ? `${dueDate.getDate()} ${MONTH_NAMES[dueDate.getMonth()]}` : ``;
+  const date = (isDateShowing && dueDate) ? formatDate(dueDate) : ``;
   const time = (isDateShowing && dueDate) ? formatTime(dueDate) : ``;
 
   const repeatClass = isRepeatingTask ? `card--repeat` : ``;
@@ -200,6 +200,8 @@ export default class TaskEdit extends AbstractSmartComponent {
     this._isRepeatingTask = Object.values(task.repeatingDays).some(Boolean);
     /* Сохраняет массив дней */
     this._activeRepeatingDays = Object.assign({}, task.repeatingDays);
+    /* Сохраняет обработчик отправки формы */
+    this._submitHandler = null;
 
     this._subscribeOnEvents();
   }
@@ -247,6 +249,7 @@ export default class TaskEdit extends AbstractSmartComponent {
 
   /* Восстанавливает обработчики событий после ререндинга */
   recoveryListeners() {
+    this.setFormSubmitHandler(this._submitHandler);
     this._subscribeOnEvents();
   }
 
@@ -265,5 +268,7 @@ export default class TaskEdit extends AbstractSmartComponent {
   setFormSubmitHandler(handler) {
     this.getElement().querySelector(`form`)
       .addEventListener(`submit`, handler);
+
+    this._submitHandler = handler;
   }
 }

@@ -59,10 +59,9 @@ export default class TaskController {
     });
 
     /* Заменяет форму редактирования на карточку задачи при отправке формы */
-    this._taskEditComponent.setFormSubmitHandler(() => {
+    this._taskEditComponent.setFormSubmitHandler((evt) => {
+      evt.preventDefault();
       this._replaceEditToTask();
-      /* Удаляет обработчик нажатия на ESC */
-      document.removeEventListener(`keydown`, this._onEscKeyDown);
     });
 
     /* Заменяет старый компонент на новый. Если компонентов не было,
@@ -84,6 +83,8 @@ export default class TaskController {
 
   /* Заменяет форму редактирования на карточку задачи */
   _replaceEditToTask() {
+    /* Удаляет обработчик нажатия на ESC */
+    document.removeEventListener(`keydown`, this._onEscKeyDown);
     /* Восстанавливает стандартные значения даты и дней повторения задач */
     this._taskEditComponent.reset();
 
