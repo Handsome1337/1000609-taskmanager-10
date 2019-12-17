@@ -15,6 +15,14 @@ module.exports = {
     compress: true, // Сжатие
     watchContentBase: true // Автоматическая перезагрузка страницы
   },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [`style-loader`, `css-loader`]
+      }
+    ]
+  },
   plugins: [
     new MomentLocalesPlugin({ // Оставляем только одну локаль
       localesToKeep: [`es-us`]
