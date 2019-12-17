@@ -1,6 +1,11 @@
 import {COLORS, DAYS, MONTH_NAMES} from '../const.js';
 import {formatTime} from './../utils/common.js';
-import AbstractComponent from './abstract-component.js';
+import AbstractSmartComponent from './abstract-smart-component.js';
+
+/* Проверяет, есть ли повторяющиеся дни */
+const isRepeating = (repeatingDays) => {
+  return Object.values(repeatingDays).some(Boolean);
+};
 
 /* Возвращает разметку выбора цвета */
 const createColorsMarkup = (colors, currentColor) => {
@@ -72,25 +77,23 @@ const createHashtags = (tags) => {
 };
 
 /* Возвращает шаблон разметки формы редактирования задачи */
-const createTaskEditTemplate = (task) => {
-  const {description, tags, dueDate, color, repeatingDays} = task;
-
+const createTaskEditTemplate = (task, options = {}) => {
+  const {description, tags, dueDate, color} = task;
+  const {isDateShowing, isRepeatingTask, activeRepeatingDays} = options;
   /* Проверяет, просрочена ли дата запланированного выполнения */
   const isExpired = dueDate instanceof Date && dueDate < Date.now();
-  /* Устанавливает, показывать ли дату */
-  const isDateShowing = !!dueDate;
 
-  /* Вычисляет дату и время */
-  const date = isDateShowing ? `${dueDate.getDate()} ${MONTH_NAMES[dueDate.getMonth()]}` : ``;
-  const time = isDateShowing ? formatTime(dueDate) : ``;
+  /* Проверяет, делать ли кнопку отправки формы недоступной */
+  const isBlockSaveButton = (isDateShowing && isRepeatingTask) || (isRepeatingTask && !isRepeating(activeRepeatingDays));
+  const date = (isDateShowing && dueDate) ? `${dueDate.getDate()} ${MONTH_NAMES[dueDate.getMonth()]}` : ``;
+  const time = (isDateShowing && dueDate) ? formatTime(dueDate) : ``;
 
-  const isRepeatingTask = Object.values(repeatingDays).some(Boolean);
   const repeatClass = isRepeatingTask ? `card--repeat` : ``;
   const deadlineClass = isExpired ? `card--deadline` : ``;
 
   const tagsMarkup = createHashtags(tags);
   const colorsMarkup = createColorsMarkup(COLORS, color);
-  const repeatingDaysMarkup = createRepeatingDaysMarkup(DAYS, repeatingDays);
+  const repeatingDaysMarkup = createRepeatingDaysMarkup(DAYS, activeRepeatingDays);
   return (
     `<article class="card card--edit card--${color} ${repeatClass} ${deadlineClass}">
       <form class="card__form" method="get">
@@ -175,7 +178,7 @@ const createTaskEditTemplate = (task) => {
           </div>
 
           <div class="card__status-btns">
-            <button class="card__save" type="submit">save</button>
+            <button class="card__save" type="submit" ${isBlockSaveButton ? `disabled` : ``}>save</button>
             <button class="card__delete" type="button">delete</button>
           </div>
         </div>
@@ -185,17 +188,77 @@ const createTaskEditTemplate = (task) => {
 };
 
 /* Экспортирует класс (компонент) формы редактирования задачи */
-export default class TaskEdit extends AbstractComponent {
+export default class TaskEdit extends AbstractSmartComponent {
   constructor(task) {
     /* Вызывает конструктор родителя */
     super();
     /* Сохраняет переданные в параметр конструктора данные */
     this._task = task;
+    /* Устанавливает, показывать ли дату */
+    this._isDateShowing = !!task.dueDate;
+    /* Устанавливает, есть ли дни повторения задачи */
+    this._isRepeatingTask = Object.values(task.repeatingDays).some(Boolean);
+    /* Сохраняет массив дней */
+    this._activeRepeatingDays = Object.assign({}, task.repeatingDays);
+
+    this._subscribeOnEvents();
   }
 
   /* Возвращает разметку шаблона */
   getTemplate() {
-    return createTaskEditTemplate(this._task);
+    return createTaskEditTemplate(this._task, {
+      isDateShowing: this._isDateShowing,
+      isRepeatingTask: this._isRepeatingTask,
+      activeRepeatingDays: this._activeRepeatingDays
+    });
+  }
+
+  /* Подписывается на события */
+  _subscribeOnEvents() {
+    const element = this.getElement();
+
+    /* Показывает/скрывает инпут для ввода даты исполнения */
+    element.querySelector(`.card__date-deadline-toggle`)
+      .addEventListener(`click`, () => {
+        this._isDateShowing = !this._isDateShowing;
+
+        this.rerender();
+      });
+
+    /* Показывает/скрывает дни повторения задачи */
+    element.querySelector(`.card__repeat-toggle`)
+      .addEventListener(`click`, () => {
+        this._isRepeatingTask = !this.isRepeatingTask;
+
+        this.rerender();
+      });
+
+    /* Находит fieldset с днями повторения */
+    const repeatDaysElement = element.querySelector(`.card__repeat-days`);
+    /* Делает день днем повторения, либо наоборот */
+    if (repeatDaysElement) {
+      repeatDaysElement.addEventListener(`change`, (evt) => {
+        this._activeRepeatingDays[evt.target.value] = evt.target.checked;
+
+        this.rerender();
+      });
+    }
+  }
+
+  /* Восстанавливает обработчики событий после ререндинга */
+  recoveryListeners() {
+    this._subscribeOnEvents();
+  }
+
+  /* Восстанавливает стандартные значения даты и дней повторения задач */
+  reset() {
+    const task = this._task;
+
+    this._isDateShowing = !!task.dueDate;
+    this._isRepeatingTask = Object.values(task.repeatingDays).some(Boolean);
+    this._activeRepeatingDays = Object.assign({}, task.repeatingDays);
+
+    this.rerender();
   }
 
   /* Устанавливает обработчик отправки формы */
