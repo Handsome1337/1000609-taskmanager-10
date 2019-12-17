@@ -236,7 +236,7 @@ export default class TaskEdit extends AbstractSmartComponent {
     /* Показывает/скрывает дни повторения задачи */
     element.querySelector(`.card__repeat-toggle`)
       .addEventListener(`click`, () => {
-        this._isRepeatingTask = !this.isRepeatingTask;
+        this._isRepeatingTask = !this._isRepeatingTask;
 
         this.rerender();
       });
