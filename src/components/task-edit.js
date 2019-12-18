@@ -1,6 +1,9 @@
-import {COLORS, DAYS, MONTH_NAMES} from '../const.js';
-import {formatTime} from './../utils/common.js';
+import {COLORS, DAYS} from '../const.js';
+import {formatDate, formatTime} from './../utils/common.js';
 import AbstractSmartComponent from './abstract-smart-component.js';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import 'flatpickr/dist/themes/light.css';
 
 /* Проверяет, есть ли повторяющиеся дни */
 const isRepeating = (repeatingDays) => {
@@ -85,7 +88,7 @@ const createTaskEditTemplate = (task, options = {}) => {
 
   /* Проверяет, делать ли кнопку отправки формы недоступной */
   const isBlockSaveButton = (isDateShowing && isRepeatingTask) || (isRepeatingTask && !isRepeating(activeRepeatingDays));
-  const date = (isDateShowing && dueDate) ? `${dueDate.getDate()} ${MONTH_NAMES[dueDate.getMonth()]}` : ``;
+  const date = (isDateShowing && dueDate) ? formatDate(dueDate) : ``;
   const time = (isDateShowing && dueDate) ? formatTime(dueDate) : ``;
 
   const repeatClass = isRepeatingTask ? `card--repeat` : ``;
@@ -200,7 +203,12 @@ export default class TaskEdit extends AbstractSmartComponent {
     this._isRepeatingTask = Object.values(task.repeatingDays).some(Boolean);
     /* Сохраняет массив дней */
     this._activeRepeatingDays = Object.assign({}, task.repeatingDays);
+    /* Сохраняет обработчик отправки формы */
+    this._submitHandler = null;
+    /* Сохраняет календарь */
+    this._flatpickr = null;
 
+    this._applyFlatpickr();
     this._subscribeOnEvents();
   }
 
@@ -228,7 +236,7 @@ export default class TaskEdit extends AbstractSmartComponent {
     /* Показывает/скрывает дни повторения задачи */
     element.querySelector(`.card__repeat-toggle`)
       .addEventListener(`click`, () => {
-        this._isRepeatingTask = !this.isRepeatingTask;
+        this._isRepeatingTask = !this._isRepeatingTask;
 
         this.rerender();
       });
@@ -245,9 +253,36 @@ export default class TaskEdit extends AbstractSmartComponent {
     }
   }
 
+  /* Добавляет календарь */
+  _applyFlatpickr() {
+    /* Если календарь был создан ранее, удаляет его */
+    if (this._flatpickr) {
+      this._flatpickr.destroy();
+      this._flatpickr = null;
+    }
+
+    /* Если задача не регулярная, создаёт календарь при клике на поле ввода даты */
+    if (this._isDateShowing) {
+      const dateElement = this.getElement().querySelector(`.card__date`);
+      this._flatpickr = flatpickr(dateElement, {
+        altInput: true,
+        allowInput: true,
+        defaultDate: this._task.dueDate
+      });
+    }
+  }
+
   /* Восстанавливает обработчики событий после ререндинга */
   recoveryListeners() {
+    this.setFormSubmitHandler(this._submitHandler);
     this._subscribeOnEvents();
+  }
+
+  /* Переотрисовывает компонент */
+  rerender() {
+    super.rerender();
+
+    this._applyFlatpickr();
   }
 
   /* Восстанавливает стандартные значения даты и дней повторения задач */
@@ -265,5 +300,7 @@ export default class TaskEdit extends AbstractSmartComponent {
   setFormSubmitHandler(handler) {
     this.getElement().querySelector(`form`)
       .addEventListener(`submit`, handler);
+
+    this._submitHandler = handler;
   }
 }

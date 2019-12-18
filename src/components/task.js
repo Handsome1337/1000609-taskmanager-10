@@ -1,5 +1,4 @@
-import {MONTH_NAMES} from '../const.js';
-import {formatTime} from './../utils/common.js';
+import {formatDate, formatTime} from './../utils/common.js';
 import AbstractComponent from './abstract-component.js';
 
 /* Возвращает разметку хештега */
@@ -39,8 +38,8 @@ const createTaskTemplate = (task) => {
   const isDateShowing = !!dueDate;
 
   /* Вычисляет дату и время */
-  const date = isDateShowing ? `${dueDate.getDate()} ${MONTH_NAMES[dueDate.getMonth()]}` : ``;
-  const time = isDateShowing ? `${formatTime(dueDate)}` : ``;
+  const date = isDateShowing ? formatDate(dueDate) : ``;
+  const time = isDateShowing ? formatTime(dueDate) : ``;
   const hashtags = createHashtagsMarkup(Array.from(tags));
   const editButton = createButtonMarkup(`edit`, true);
   const archiveButton = createButtonMarkup(`archive`, isArchive);
