@@ -2,6 +2,7 @@ import SiteMenuComponent from './components/site-menu.js';
 import FilterComponent from './components/filter.js';
 import BoardComponent from './components/board.js';
 import BoardController from './controllers/board.js';
+import TasksModel from './models/tasks.js';
 import {generateTasks} from './mock/task.js';
 import {generateFilters} from './mock/filter.js';
 import {render} from './utils/render.js';
@@ -11,6 +12,9 @@ const TASK_COUNT = 22;
 /* Сохраняют моки фильтров и задач */
 const filters = generateFilters();
 const tasks = generateTasks(TASK_COUNT);
+/* Сохраняет модель задач и записывает в нее задачи */
+const tasksModel = new TasksModel();
+tasksModel.setTasks(tasks);
 
 /* Находит main и  шапку сайта */
 const siteMainElement = document.querySelector(`.main`);
@@ -26,7 +30,7 @@ const boardComponent = new BoardComponent();
 render(siteMainElement, boardComponent);
 
 /* Сохраняет контроллёр доски задач */
-const boardController = new BoardController(boardComponent);
+const boardController = new BoardController(boardComponent, tasksModel);
 
 /* Отрисовывает компоненты на доску задач */
-boardController.render(tasks);
+boardController.render();
