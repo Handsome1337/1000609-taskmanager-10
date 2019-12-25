@@ -1,14 +1,9 @@
 import {COLORS, DAYS} from '../const.js';
-import {formatDate, formatTime} from './../utils/common.js';
+import {formatDate, formatTime, isRepeating, isOverdueDate} from './../utils/common.js';
 import AbstractSmartComponent from './abstract-smart-component.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import 'flatpickr/dist/themes/light.css';
-
-/* Проверяет, есть ли повторяющиеся дни */
-const isRepeating = (repeatingDays) => {
-  return Object.values(repeatingDays).some(Boolean);
-};
 
 /* Возвращает разметку выбора цвета */
 const createColorsMarkup = (colors, currentColor) => {
@@ -84,7 +79,7 @@ const createTaskEditTemplate = (task, options = {}) => {
   const {description, tags, dueDate, color} = task;
   const {isDateShowing, isRepeatingTask, activeRepeatingDays} = options;
   /* Проверяет, просрочена ли дата запланированного выполнения */
-  const isExpired = dueDate instanceof Date && dueDate < Date.now();
+  const isExpired = dueDate instanceof Date && isOverdueDate(dueDate, new Date());
 
   /* Проверяет, делать ли кнопку отправки формы недоступной */
   const isBlockSaveButton = (isDateShowing && isRepeatingTask) || (isRepeatingTask && !isRepeating(activeRepeatingDays));

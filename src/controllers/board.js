@@ -39,8 +39,11 @@ export default class BoardController {
     this._onDataChange = this._onDataChange.bind(this);
     this._onSortTypeChange = this._onSortTypeChange.bind(this);
     this._onViewChange = this._onViewChange.bind(this);
+    this._onLoadMoreButtonClick = this._onLoadMoreButtonClick.bind(this);
+    this._onFilterChange = this._onFilterChange.bind(this);
 
     this._sortComponent.setSortTypeChangeHandler(this._onSortTypeChange);
+    this._tasksModel.setFilterChangeHandler(this._onFilterChange);
   }
 
   /* Отрисовывает компоненты в переданном в конструктор элементе */
@@ -60,19 +63,36 @@ export default class BoardController {
     render(container, this._sortComponent);
     render(container, this._tasksComponent);
 
-    /* Сохраняет контейнер для задач */
-    const taskListElement = this._tasksComponent.getElement();
-
-    /* Сохраняет новые задачи */
-    const newTasks = renderTasks(taskListElement, tasks.slice(0, this._showingTasksCount), this._onDataChange, this._onViewChange);
-    /* Сохраняет показанные карточки */
-    this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
+    this._renderTasks(tasks.slice(0, this._showingTasksCount));
 
     this._renderLoadMoreButton();
   }
 
+  /* Отрисовывает задачи */
+  _renderTasks(tasks) {
+    /* Сохраняет контейнер для задач */
+    const taskListElement = this._tasksComponent.getElement();
+
+    /* Сохраняет новые задачи */
+    const newTasks = renderTasks(taskListElement, tasks, this._onDataChange, this._onViewChange);
+    /* Сохраняет показанные карточки */
+    this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
+    this._showingTasksCount = this._showedTaskControllers.length;
+  }
+
+  /* Удаляет задачи */
+  _removeTasks() {
+    /* Сохраняет контейнер для задач */
+    const taskListElement = this._tasksComponent.getElement();
+
+    taskListElement.innerHTML = ``;
+    this._showedTaskControllers = [];
+  }
+
   /* Отрисовывает кнопку "Load more" */
   _renderLoadMoreButton() {
+    remove(this._loadMoreButtonComponent);
+
     /* Проверяет, показаны ли все задачи */
     if (this._showingTasksCount >= this._tasksModel.getTasks().length) {
       return;
@@ -82,26 +102,24 @@ export default class BoardController {
     /* Добавляет на доску задач кнопку "Load more" */
     render(container, this._loadMoreButtonComponent);
 
-    this._loadMoreButtonComponent.setClickHandler(() => {
-      /* Сохраняет количество задач */
-      const prevTasksCount = this._showingTasksCount;
-      /* Сохраняет контейнер для кнопки */
-      const taskListElement = this._tasksComponent.getElement();
-      const tasks = this._tasksModel.getTasks();
+    this._loadMoreButtonComponent.setClickHandler(this._onLoadMoreButtonClick);
+  }
 
-      /* Сохраняет количество задач после нажатия на кнопку */
-      this._showingTasksCount = this._showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+  _onLoadMoreButtonClick() {
+    /* Сохраняет количество задач */
+    const prevTasksCount = this._showingTasksCount;
+    const tasks = this._tasksModel.getTasks();
 
-      /* Сорханяет новые задачи */
-      const newTasks = renderTasks(taskListElement, tasks.slice(prevTasksCount, this._showingTasksCount), this._onDataChange, this._onViewChange);
-      /* Добавляет новые задачи в массиов показанных задач */
-      this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
+    /* Сохраняет количество задач после нажатия на кнопку */
+    this._showingTasksCount = this._showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
 
-      /* Если показаны все задачи, удаляет кнопку */
-      if (this._showingTasksCount >= tasks.length) {
-        remove(this._loadMoreButtonComponent);
-      }
-    });
+    /* Отрисовывание новые задачи */
+    this._renderTasks(tasks.slice(prevTasksCount, this._showingTasksCount));
+
+    /* Если показаны все задачи, удаляет кнопку */
+    if (this._showingTasksCount >= tasks.length) {
+      remove(this._loadMoreButtonComponent);
+    }
   }
 
   /* Заменяет неактуальную задачу актуальной */
@@ -137,14 +155,9 @@ export default class BoardController {
         break;
     }
 
-    const taskListElement = this._tasksComponent.getElement();
-
     /* Удаляет неотсортированные задачи */
-    taskListElement.innerHTML = ``;
-
-    const newTasks = renderTasks(taskListElement, sortedTasks, this._onDataChange, this._onViewChange);
-    /* Добавляет на доску отсортированные задачи */
-    this._showedTaskControllers = newTasks;
+    this._removeTasks();
+    this._renderTasks(sortedTasks);
 
     /* Если выбрана сортировка по умолчанию, отрисовывает кнопку "Load more", иначе удаляет её */
     if (sortType === SortType.DEFAULT) {
@@ -152,5 +165,11 @@ export default class BoardController {
     } else {
       remove(this._loadMoreButtonComponent);
     }
+  }
+
+  _onFilterChange() {
+    this._removeTasks();
+    this._renderTasks(this._tasksModel.getTasks().slice(0, SHOWING_TASKS_COUNT_ON_START));
+    this._renderLoadMoreButton();
   }
 }

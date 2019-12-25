@@ -1,4 +1,4 @@
-import {formatDate, formatTime} from './../utils/common.js';
+import {formatDate, formatTime, isOverdueDate} from './../utils/common.js';
 import AbstractComponent from './abstract-component.js';
 
 /* Возвращает разметку хештега */
@@ -33,7 +33,7 @@ const createTaskTemplate = (task) => {
   const {description, tags, dueDate, color, repeatingDays, isArchive, isFavorite} = task;
 
   /* Проверяет, просрочена ли дата запланированного выполнения */
-  const isExpired = dueDate instanceof Date && dueDate < Date.now();
+  const isExpired = dueDate instanceof Date && isOverdueDate(dueDate, new Date());
   /* Устанавливает, показывать ли дату */
   const isDateShowing = !!dueDate;
 
