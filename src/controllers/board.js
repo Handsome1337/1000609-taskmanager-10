@@ -2,7 +2,7 @@ import NoTasksComponent from './../components/no-tasks.js';
 import SortComponent, {SortType} from './../components/sort.js';
 import TasksComponent from './../components/tasks.js';
 import LoadMoreButtonComponent from './../components/load-more-button';
-import TaskController from './task.js';
+import TaskController, {Mode as TaskControllerMode, EmptyTask} from './task.js';
 import {render, remove} from './../utils/render.js';
 
 /* После загрузки приложения отображается не более 8 карточек задач.
@@ -14,7 +14,7 @@ const SHOWING_TASKS_COUNT_BY_BUTTON = 8;
 const renderTasks = (taskListElement, tasks, onDataChange, onViewChange) => {
   return tasks.map((task) => {
     const taskController = new TaskController(taskListElement, onDataChange, onViewChange);
-    taskController.render(task);
+    taskController.render(task, TaskControllerMode.DEFAULT);
 
     return taskController;
   });
@@ -34,6 +34,7 @@ export default class BoardController {
     this._sortComponent = new SortComponent();
     this._tasksComponent = new TasksComponent();
     this._loadMoreButtonComponent = new LoadMoreButtonComponent();
+    this._creatingTask = null;
 
     /* Обработчик изменения данных */
     this._onDataChange = this._onDataChange.bind(this);
@@ -68,6 +69,18 @@ export default class BoardController {
     this._renderLoadMoreButton();
   }
 
+  /* Создаёт задачу */
+  createTask() {
+    if (this._creatingTask) {
+      return;
+    }
+
+    /* Сохраняет контейнер для задач */
+    const taskListElement = this._tasksComponent.getElement();
+    this._creatingTask = new TaskController(taskListElement, this._onDataChange, this._onViewChange);
+    this._creatingTask.render(EmptyTask, TaskControllerMode.ADDING);
+  }
+
   /* Отрисовывает задачи */
   _renderTasks(tasks) {
     /* Сохраняет контейнер для задач */
@@ -82,10 +95,7 @@ export default class BoardController {
 
   /* Удаляет задачи */
   _removeTasks() {
-    /* Сохраняет контейнер для задач */
-    const taskListElement = this._tasksComponent.getElement();
-
-    taskListElement.innerHTML = ``;
+    this._showedTaskControllers.forEach((taskController) => taskController.destroy());
     this._showedTaskControllers = [];
   }
 
@@ -103,6 +113,13 @@ export default class BoardController {
     render(container, this._loadMoreButtonComponent);
 
     this._loadMoreButtonComponent.setClickHandler(this._onLoadMoreButtonClick);
+  }
+
+  /* Обновляет задачи */
+  _updateTasks(count) {
+    this._removeTasks();
+    this._renderTasks(this._tasksModel.getTasks().slice(0, count));
+    this._renderLoadMoreButton();
   }
 
   _onLoadMoreButtonClick() {
@@ -124,11 +141,29 @@ export default class BoardController {
 
   /* Заменяет неактуальную задачу актуальной */
   _onDataChange(taskController, oldData, newData) {
-    const isSuccess = this._tasksModel.updateTask(oldData.id, newData);
+    if (oldData === EmptyTask) {
+      this._creatingTask = null;
+      if (newData === null) {
+        taskController.destroy();
+        this._updateTasks(this._showingTasksCount);
+      } else {
+        this._tasksModel.addTask(newData);
+        taskController.render(newData, TaskControllerMode.DEFAULT);
 
-    /* Если задача не найдена, выполнение функции прекращается */
-    if (isSuccess) {
-      taskController.render(newData);
+        const destroyedTask = this._showedTaskControllers.pop();
+        destroyedTask.destroy();
+
+        this._showedTaskControllers = [].concat(taskController, this._showedTaskControllers);
+        this._showingTasksCount = this._showedTaskControllers.length;
+      }
+    } else if (newData === null) {
+      this._tasksModel.removeTask(oldData.id);
+      this._updateTasks(this._showingTasksCount);
+    } else {
+      const isSuccess = this._tasksModel.updateTask(oldData.id, newData);
+      if (isSuccess) {
+        taskController.render(newData, TaskControllerMode.DEFAULT);
+      }
     }
   }
 
@@ -167,9 +202,8 @@ export default class BoardController {
     }
   }
 
+  /* Обработчик изменения фильтра */
   _onFilterChange() {
-    this._removeTasks();
-    this._renderTasks(this._tasksModel.getTasks().slice(0, SHOWING_TASKS_COUNT_ON_START));
-    this._renderLoadMoreButton();
+    this._updateTasks(SHOWING_TASKS_COUNT_ON_START);
   }
 }

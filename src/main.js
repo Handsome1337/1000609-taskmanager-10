@@ -17,8 +17,16 @@ tasksModel.setTasks(tasks);
 /* Находит main и  шапку сайта */
 const siteMainElement = document.querySelector(`.main`);
 const siteHeaderElement = siteMainElement.querySelector(`.main__control`);
+/* Сохраняет компонент меню сайта */
+const siteMenuComponent = new SiteMenuComponent();
+
+siteMenuComponent.getElement().querySelector(`.control__label--new-task`)
+  .addEventListener(`click`, () => {
+    boardController.createTask();
+  });
+
 /* Добавляет в шапку сайта шаблон меню */
-render(siteHeaderElement, new SiteMenuComponent());
+render(siteHeaderElement, siteMenuComponent);
 
 /* Сохраняет контроллер фильтрации */
 const filterController = new FilterController(siteMainElement, tasksModel);

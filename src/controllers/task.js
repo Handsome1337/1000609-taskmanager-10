@@ -1,11 +1,32 @@
 import TaskComponent from './../components/task.js';
 import TaskEditComponent from './../components/task-edit.js';
-import {render, replace} from './../utils/render.js';
+import {RenderPosition, render, replace, remove} from './../utils/render.js';
+import {COLOR} from './../const.js';
 
 /* Режим, в котором находится задача */
-const Mode = {
+export const Mode = {
+  ADDING: `adding`,
   DEFAULT: `default`,
   EDIT: `edit`
+};
+
+/* Пустая задача */
+export const EmptyTask = {
+  description: ``,
+  dueDate: null,
+  repeatingDays: {
+    'mo': false,
+    'tu': false,
+    'we': false,
+    'th': false,
+    'fr': false,
+    'sa': false,
+    'su': false
+  },
+  tags: [],
+  color: COLOR.BLACK,
+  isFavorite: false,
+  isArchive: false
 };
 
 /* Экспортирует контроллёр задачи */
@@ -28,10 +49,11 @@ export default class TaskController {
   }
 
   /* Отрисовывает карточку задачи */
-  render(task) {
+  render(task, mode) {
     /* Сохраняют состояние компонентов */
     const oldTaskComponent = this._taskComponent;
     const oldTaskEditComponent = this._taskEditComponent;
+    this._mode = mode;
 
     /* Перезаписывает компоненты задачи и формы редактирования задачи */
     this._taskComponent = new TaskComponent(task);
@@ -58,20 +80,42 @@ export default class TaskController {
       }));
     });
 
-    /* Заменяет форму редактирования на карточку задачи при отправке формы */
     this._taskEditComponent.setFormSubmitHandler((evt) => {
       evt.preventDefault();
-      this._replaceEditToTask();
+      const data = this._taskEditComponent.getData();
+      this._onDataChange(this, task, data);
     });
 
-    /* Заменяет старый компонент на новый. Если компонентов не было,
-    добавляет компонент карточки в контейнер */
-    if (oldTaskComponent && oldTaskEditComponent) {
-      replace(this._taskComponent, oldTaskComponent);
-      replace(this._taskEditComponent, oldTaskEditComponent);
-    } else {
-      render(this._container, this._taskComponent);
+    this._taskEditComponent.setDeleteButtonClickHandler(() => this._onDataChange(this, task, null));
+
+    switch (mode) {
+      /* Заменяет старый компонент на новый, форму редактирования на карточку задачи.
+      Если компонентов не было, добавляет компонент карточки в контейнер */
+      case Mode.DEFAULT:
+        if (oldTaskComponent && oldTaskEditComponent) {
+          replace(this._taskComponent, oldTaskComponent);
+          replace(this._taskEditComponent, oldTaskEditComponent);
+          this._replaceEditToTask();
+        } else {
+          render(this._container, this._taskComponent);
+        }
+        break;
+      case Mode.ADDING:
+        if (oldTaskComponent && oldTaskEditComponent) {
+          remove(oldTaskComponent);
+          remove(oldTaskEditComponent);
+        }
+        document.addEventListener(`keydown`, this._onEscKeyDown);
+        render(this._container, this._taskEditComponent, RenderPosition.AFTERBEGIN);
+        break;
     }
+  }
+
+  /* Удаляет компоненты карточки и обработчик закрытия формы редактирования */
+  destroy() {
+    remove(this._taskEditComponent);
+    remove(this._taskComponent);
+    document.removeEventListener(`keydown`, this._onEscKeyDown);
   }
 
   /* Меняет расширенную информацию о задаче на карточку задачи */
@@ -109,6 +153,9 @@ export default class TaskController {
     const isEscKey = evt.key === `Escape` || evt.key === `Esc`;
 
     if (isEscKey) {
+      if (this._mode === Mode.ADDING) {
+        this._onDataChange(this, EmptyTask, null);
+      }
       this._replaceEditToTask();
       document.removeEventListener(`keydown`, this._onEscKeyDown);
     }

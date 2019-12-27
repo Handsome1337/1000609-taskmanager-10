@@ -43,12 +43,13 @@ export default class FilterController {
     }
   }
 
-  /* Устанавливает активный фильтр */
+  /* Обработчик изменения активного фильтра */
   _onFilterChange(filterType) {
     this._tasksModel.setFilter(filterType);
     this._activeFilterType = filterType;
   }
 
+  /* Обработчик изменения данных */
   _onDataChange() {
     this.render();
   }
