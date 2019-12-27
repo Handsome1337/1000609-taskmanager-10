@@ -1,5 +1,6 @@
-import {formatDate, formatTime} from './../utils/common.js';
+import {formatDate, formatTime, isOverdueDate} from './../utils/common.js';
 import AbstractComponent from './abstract-component.js';
+import he from 'he';
 
 /* Возвращает разметку хештега */
 const createHashtagsMarkup = (hashtags) => {
@@ -30,16 +31,17 @@ const createButtonMarkup = (name, isActive) => {
 
 /* Возвращает шаблон разметки задачи */
 const createTaskTemplate = (task) => {
-  const {description, tags, dueDate, color, repeatingDays, isArchive, isFavorite} = task;
+  const {description: notSanitizedDescription, tags, dueDate, color, repeatingDays, isArchive, isFavorite} = task;
 
   /* Проверяет, просрочена ли дата запланированного выполнения */
-  const isExpired = dueDate instanceof Date && dueDate < Date.now();
+  const isExpired = dueDate instanceof Date && isOverdueDate(dueDate, new Date());
   /* Устанавливает, показывать ли дату */
   const isDateShowing = !!dueDate;
 
   /* Вычисляет дату и время */
   const date = isDateShowing ? formatDate(dueDate) : ``;
   const time = isDateShowing ? formatTime(dueDate) : ``;
+  const description = he.encode(notSanitizedDescription);
   const hashtags = createHashtagsMarkup(Array.from(tags));
   const editButton = createButtonMarkup(`edit`, true);
   const archiveButton = createButtonMarkup(`archive`, isArchive);

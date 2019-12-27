@@ -2,7 +2,7 @@ import NoTasksComponent from './../components/no-tasks.js';
 import SortComponent, {SortType} from './../components/sort.js';
 import TasksComponent from './../components/tasks.js';
 import LoadMoreButtonComponent from './../components/load-more-button';
-import TaskController from './task.js';
+import TaskController, {Mode as TaskControllerMode, EmptyTask} from './task.js';
 import {render, remove} from './../utils/render.js';
 
 /* После загрузки приложения отображается не более 8 карточек задач.
@@ -14,7 +14,7 @@ const SHOWING_TASKS_COUNT_BY_BUTTON = 8;
 const renderTasks = (taskListElement, tasks, onDataChange, onViewChange) => {
   return tasks.map((task) => {
     const taskController = new TaskController(taskListElement, onDataChange, onViewChange);
-    taskController.render(task);
+    taskController.render(task, TaskControllerMode.DEFAULT);
 
     return taskController;
   });
@@ -22,33 +22,37 @@ const renderTasks = (taskListElement, tasks, onDataChange, onViewChange) => {
 
 /* Экспортирует контроллёр доски */
 export default class BoardController {
-  constructor(container) {
+  constructor(container, tasksModel) {
     /* Сохраняет элемент, в который будут вставляться компоненты */
     this._container = container;
+    /* Сохраняет модель задач */
+    this._tasksModel = tasksModel;
 
-    this._tasks = [];
     this._showedTaskControllers = [];
     this._showingTasksCount = SHOWING_TASKS_COUNT_ON_START;
     this._noTasksComponent = new NoTasksComponent();
     this._sortComponent = new SortComponent();
     this._tasksComponent = new TasksComponent();
     this._loadMoreButtonComponent = new LoadMoreButtonComponent();
+    this._creatingTask = null;
 
     /* Обработчик изменения данных */
     this._onDataChange = this._onDataChange.bind(this);
     this._onSortTypeChange = this._onSortTypeChange.bind(this);
     this._onViewChange = this._onViewChange.bind(this);
+    this._onLoadMoreButtonClick = this._onLoadMoreButtonClick.bind(this);
+    this._onFilterChange = this._onFilterChange.bind(this);
 
     this._sortComponent.setSortTypeChangeHandler(this._onSortTypeChange);
+    this._tasksModel.setFilterChangeHandler(this._onFilterChange);
   }
 
   /* Отрисовывает компоненты в переданном в конструктор элементе */
-  render(tasks) {
-    this._tasks = tasks;
-
+  render() {
     const container = this._container.getElement();
+    const tasks = this._tasksModel.getTasks();
     /* Проверяет, все ли задачи выполнены */
-    const isAllTasksArchived = this._tasks.every((task) => task.isArchive);
+    const isAllTasksArchived = tasks.every((task) => task.isArchive);
 
     /* Если все задачи в архиве, отрисовывает сообщение о том, что все задачи выполнены.
     Иначе отрисовывает сортировку, список задач и карточки задач */
@@ -60,21 +64,47 @@ export default class BoardController {
     render(container, this._sortComponent);
     render(container, this._tasksComponent);
 
-    /* Сохраняет контейнер для задач */
-    const taskListElement = this._tasksComponent.getElement();
-
-    /* Сохраняет новые задачи */
-    const newTasks = renderTasks(taskListElement, this._tasks.slice(0, this._showingTasksCount), this._onDataChange, this._onViewChange);
-    /* Сохраняет показанные карточки */
-    this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
+    this._renderTasks(tasks.slice(0, this._showingTasksCount));
 
     this._renderLoadMoreButton();
   }
 
+  /* Создаёт задачу */
+  createTask() {
+    if (this._creatingTask) {
+      return;
+    }
+
+    /* Сохраняет контейнер для задач */
+    const taskListElement = this._tasksComponent.getElement();
+    this._creatingTask = new TaskController(taskListElement, this._onDataChange, this._onViewChange);
+    this._creatingTask.render(EmptyTask, TaskControllerMode.ADDING);
+  }
+
+  /* Отрисовывает задачи */
+  _renderTasks(tasks) {
+    /* Сохраняет контейнер для задач */
+    const taskListElement = this._tasksComponent.getElement();
+
+    /* Сохраняет новые задачи */
+    const newTasks = renderTasks(taskListElement, tasks, this._onDataChange, this._onViewChange);
+    /* Сохраняет показанные карточки */
+    this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
+    this._showingTasksCount = this._showedTaskControllers.length;
+  }
+
+  /* Удаляет задачи */
+  _removeTasks() {
+    this._showedTaskControllers.forEach((taskController) => taskController.destroy());
+    this._showedTaskControllers = [];
+  }
+
   /* Отрисовывает кнопку "Load more" */
   _renderLoadMoreButton() {
+    remove(this._loadMoreButtonComponent);
+
     /* Проверяет, показаны ли все задачи */
-    if (this._showingTasksCount >= this._tasks.length) {
+    if (this._showingTasksCount >= this._tasksModel.getTasks().length) {
       return;
     }
 
@@ -82,42 +112,59 @@ export default class BoardController {
     /* Добавляет на доску задач кнопку "Load more" */
     render(container, this._loadMoreButtonComponent);
 
-    this._loadMoreButtonComponent.setClickHandler(() => {
-      /* Сохраняет количество задач */
-      const prevTasksCount = this._showingTasksCount;
-      /* Сохраняет контейнер для кнопки */
-      const taskListElement = this._tasksComponent.getElement();
+    this._loadMoreButtonComponent.setClickHandler(this._onLoadMoreButtonClick);
+  }
 
-      /* Сохраняет количество задач после нажатия на кнопку */
-      this._showingTasksCount = this._showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+  /* Обновляет задачи */
+  _updateTasks(count) {
+    this._removeTasks();
+    this._renderTasks(this._tasksModel.getTasks().slice(0, count));
+    this._renderLoadMoreButton();
+  }
 
-      /* Сорханяет новые задачи */
-      const newTasks = renderTasks(taskListElement, this._tasks.slice(prevTasksCount, this._showingTasksCount), this._onDataChange, this._onViewChange);
-      /* Добавляет новые задачи в массиов показанных задач */
-      this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
+  _onLoadMoreButtonClick() {
+    /* Сохраняет количество задач */
+    const prevTasksCount = this._showingTasksCount;
+    const tasks = this._tasksModel.getTasks();
 
-      /* Если показаны все задачи, удаляет кнопку */
-      if (this._showingTasksCount >= this._tasks.length) {
-        remove(this._loadMoreButtonComponent);
-      }
-    });
+    /* Сохраняет количество задач после нажатия на кнопку */
+    this._showingTasksCount = this._showingTasksCount + SHOWING_TASKS_COUNT_BY_BUTTON;
+
+    /* Отрисовывание новые задачи */
+    this._renderTasks(tasks.slice(prevTasksCount, this._showingTasksCount));
+
+    /* Если показаны все задачи, удаляет кнопку */
+    if (this._showingTasksCount >= tasks.length) {
+      remove(this._loadMoreButtonComponent);
+    }
   }
 
   /* Заменяет неактуальную задачу актуальной */
   _onDataChange(taskController, oldData, newData) {
-    /* Сохраняет индекс задачи в массиве задач */
-    const index = this._tasks.findIndex((it) => it === oldData);
+    if (oldData === EmptyTask) {
+      this._creatingTask = null;
+      if (newData === null) {
+        taskController.destroy();
+        this._updateTasks(this._showingTasksCount);
+      } else {
+        this._tasksModel.addTask(newData);
+        taskController.render(newData, TaskControllerMode.DEFAULT);
 
-    /* Если задача не найдена, выполнение функции прекращается */
-    if (index === -1) {
-      return;
+        const destroyedTask = this._showedTaskControllers.pop();
+        destroyedTask.destroy();
+
+        this._showedTaskControllers = [].concat(taskController, this._showedTaskControllers);
+        this._showingTasksCount = this._showedTaskControllers.length;
+      }
+    } else if (newData === null) {
+      this._tasksModel.removeTask(oldData.id);
+      this._updateTasks(this._showingTasksCount);
+    } else {
+      const isSuccess = this._tasksModel.updateTask(oldData.id, newData);
+      if (isSuccess) {
+        taskController.render(newData, TaskControllerMode.DEFAULT);
+      }
     }
-
-    /* Обновляет моки на основе изменившихся данных */
-    this._tasks = [].concat(this._tasks.slice(0, index), newData, this._tasks.slice(index + 1));
-
-    /* Отрисовыает задачу на основе изменившихся данных */
-    taskController.render(this._tasks[index]);
   }
 
   /* Устанавливает всем задачам режим по умолчанию */
@@ -128,28 +175,24 @@ export default class BoardController {
   _onSortTypeChange(sortType) {
     /* Отсортированные задачи */
     let sortedTasks = [];
+    const tasks = this._tasksModel.getTasks();
 
     /* Сортирует задачи в зависимости от типа сортировки */
     switch (sortType) {
       case SortType.DATE_UP:
-        sortedTasks = this._tasks.slice().sort((a, b) => a.dueDate - b.dueDate);
+        sortedTasks = tasks.slice().sort((a, b) => a.dueDate - b.dueDate);
         break;
       case SortType.DATE_DOWN:
-        sortedTasks = this._tasks.slice().sort((a, b) => b.dueDate - a.dueDate);
+        sortedTasks = tasks.slice().sort((a, b) => b.dueDate - a.dueDate);
         break;
       case SortType.DEFAULT:
-        sortedTasks = this._tasks.slice(0, this._showingTasksCount);
+        sortedTasks = tasks.slice(0, this._showingTasksCount);
         break;
     }
 
-    const taskListElement = this._tasksComponent.getElement();
-
     /* Удаляет неотсортированные задачи */
-    taskListElement.innerHTML = ``;
-
-    const newTasks = renderTasks(taskListElement, sortedTasks, this._onDataChange, this._onViewChange);
-    /* Добавляет на доску отсортированные задачи */
-    this._showedTaskControllers = newTasks;
+    this._removeTasks();
+    this._renderTasks(sortedTasks);
 
     /* Если выбрана сортировка по умолчанию, отрисовывает кнопку "Load more", иначе удаляет её */
     if (sortType === SortType.DEFAULT) {
@@ -157,5 +200,10 @@ export default class BoardController {
     } else {
       remove(this._loadMoreButtonComponent);
     }
+  }
+
+  /* Обработчик изменения фильтра */
+  _onFilterChange() {
+    this._updateTasks(SHOWING_TASKS_COUNT_ON_START);
   }
 }
