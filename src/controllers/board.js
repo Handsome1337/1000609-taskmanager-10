@@ -69,6 +69,16 @@ export default class BoardController {
     this._renderLoadMoreButton();
   }
 
+  /* Показывает доску задач */
+  show() {
+    this._container.show();
+  }
+
+  /* Скрывает доску задач */
+  hide() {
+    this._container.hide();
+  }
+
   /* Создаёт задачу */
   createTask() {
     if (this._creatingTask) {

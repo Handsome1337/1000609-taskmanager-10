@@ -1,5 +1,7 @@
 import {createElement} from './../utils/render.js';
 
+const HIDDEN_CLASS = `visually-hidden`;
+
 /* Экспортирует абстрактный класс */
 export default class AbstractComponent {
   constructor() {
@@ -29,5 +31,19 @@ export default class AbstractComponent {
   /* Удаляет ссылку на созданный DOM-узел */
   removeElement() {
     this._element = null;
+  }
+
+  /* Показывает компонент */
+  show() {
+    if (this._element) {
+      this._element.classList.remove(HIDDEN_CLASS);
+    }
+  }
+
+  /* Скрывает компонент */
+  hide() {
+    if (this._element) {
+      this._element.classList.add(HIDDEN_CLASS);
+    }
   }
 }
