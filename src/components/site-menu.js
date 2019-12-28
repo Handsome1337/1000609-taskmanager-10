@@ -1,5 +1,12 @@
 import AbstractComponent from './abstract-component.js';
 
+/* Перечисление пунктов меню */
+export const MenuItem = {
+  NEW_TASK: `control__new-task`,
+  STATISTICS: `control__statistic`,
+  TASKS: `control__task`
+};
+
 /* Возвращает шаблон разметки меню сайта */
 const createMenuTemplate = () => {
   return (
@@ -39,5 +46,27 @@ export default class SiteMenu extends AbstractComponent {
   /* Возвращает разметку шаблона */
   getTemplate() {
     return createMenuTemplate();
+  }
+
+  /* Устанавливает активный пункт меню */
+  setActiveItem(menuItem) {
+    const item = this.getElement().querySelector(`#${menuItem}`);
+
+    if (item) {
+      item.checked = true;
+    }
+  }
+
+  /* Устанавливает обработчик переключения активного пункта меню */
+  setOnChange(handler) {
+    this.getElement().addEventListener(`change`, (evt) => {
+      if (evt.target.tagName !== `INPUT`) {
+        return;
+      }
+
+      const menuItem = evt.target.id;
+
+      handler(menuItem);
+    });
   }
 }
