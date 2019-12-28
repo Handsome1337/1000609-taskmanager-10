@@ -20,7 +20,16 @@ const siteMainElement = document.querySelector(`.main`);
 const siteHeaderElement = siteMainElement.querySelector(`.main__control`);
 /* Сохраняют компоненты меню сайта и статистики */
 const siteMenuComponent = new SiteMenuComponent();
-const statisticsComponent = new StatisticsComponent();
+
+/* Вычисляют даты для графиков */
+const dateTo = new Date();
+const dateFrom = (() => {
+  const d = new Date(dateTo);
+  d.setDate(d.getDate() - 7);
+  return d;
+})();
+
+const statisticsComponent = new StatisticsComponent({tasks: tasksModel, dateFrom, dateTo});
 
 /* Добавляет в шапку сайта шаблон меню */
 render(siteHeaderElement, siteMenuComponent);
