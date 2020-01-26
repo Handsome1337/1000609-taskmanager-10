@@ -9,6 +9,12 @@ import 'flatpickr/dist/themes/light.css';
 const MIN_DESCRIPTION_LENGTH = 1;
 const MAX_DESCRIPTION_LENGTH = 140;
 
+/* Текст кнопок по умолчанию */
+const DefaultData = {
+  DELETE_BUTTON_TEXT: `Delete`,
+  SAVE_BUTTON_TEXT: `Save`
+};
+
 /* Проверяет, допустима ли длина описания */
 const isAllowableDescriptionLength = (description) => {
   const length = description.length;
@@ -88,7 +94,7 @@ const createHashtags = (tags) => {
 /* Возвращает шаблон разметки формы редактирования задачи */
 const createTaskEditTemplate = (task, options = {}) => {
   const {tags, dueDate, color} = task;
-  const {isDateShowing, isRepeatingTask, activeRepeatingDays, currentDescription} = options;
+  const {isDateShowing, isRepeatingTask, activeRepeatingDays, currentDescription, externalData} = options;
 
   const description = he.encode(currentDescription);
 
@@ -109,6 +115,10 @@ const createTaskEditTemplate = (task, options = {}) => {
   const tagsMarkup = createHashtags(tags);
   const colorsMarkup = createColorsMarkup(COLORS, color);
   const repeatingDaysMarkup = createRepeatingDaysMarkup(DAYS, activeRepeatingDays);
+
+  const deleteButtonText = externalData.DELETE_BUTTON_TEXT;
+  const saveButtonText = externalData.SAVE_BUTTON_TEXT;
+
   return (
     `<article class="card card--edit card--${color} ${repeatClass} ${deadlineClass}">
       <form class="card__form" method="get">
@@ -193,8 +203,8 @@ const createTaskEditTemplate = (task, options = {}) => {
           </div>
 
           <div class="card__status-btns">
-            <button class="card__save" type="submit" ${isBlockSaveButton ? `disabled` : ``}>save</button>
-            <button class="card__delete" type="button">delete</button>
+            <button class="card__save" type="submit" ${isBlockSaveButton ? `disabled` : ``}>${saveButtonText}</button>
+            <button class="card__delete" type="button">${deleteButtonText}</button>
           </div>
         </div>
       </form>
@@ -217,6 +227,7 @@ export default class TaskEdit extends AbstractSmartComponent {
     this._activeRepeatingDays = Object.assign({}, task.repeatingDays);
     /* Сохраняет текущее описание задачи */
     this._currentDescription = task.description;
+    this._externalData = DefaultData;
     /* Сохраняет обработчик отправки формы */
     this._submitHandler = null;
     this._deleteButtonClickHandler = null;
@@ -232,6 +243,7 @@ export default class TaskEdit extends AbstractSmartComponent {
     return createTaskEditTemplate(this._task, {
       isDateShowing: this._isDateShowing,
       isRepeatingTask: this._isRepeatingTask,
+      externalData: this._externalData,
       activeRepeatingDays: this._activeRepeatingDays,
       currentDescription: this._currentDescription
     });
@@ -338,6 +350,12 @@ export default class TaskEdit extends AbstractSmartComponent {
     const form = this.getElement().querySelector(`.card__form`);
 
     return new FormData(form);
+  }
+
+  /* Устанавливает текст кнопок отправки и удаления формы */
+  setData(data) {
+    this._externalData = Object.assign({}, DefaultData, data);
+    this.rerender();
   }
 
   /* Устанавливает обработчик отправки формы */
