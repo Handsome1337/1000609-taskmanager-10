@@ -202,26 +202,6 @@ const createTaskEditTemplate = (task, options = {}) => {
   );
 };
 
-/* Возвращает данные из формы в виде объекта */
-const parseFormData = (formData) => {
-  const repeatingDays = DAYS.reduce((acc, day) => {
-    acc[day] = false;
-    return acc;
-  }, {});
-  const date = formData.get(`date`);
-
-  return {
-    description: formData.get(`text`),
-    color: formData.get(`color`),
-    tags: formData.getAll(`hashtag`),
-    dueDate: date ? new Date(date) : null,
-    repeatingDays: formData.getAll(`repeat`).reduce((acc, it) => {
-      acc[it] = true;
-      return acc;
-    }, repeatingDays)
-  };
-};
-
 /* Экспортирует класс (компонент) формы редактирования задачи */
 export default class TaskEdit extends AbstractSmartComponent {
   constructor(task) {
@@ -356,9 +336,8 @@ export default class TaskEdit extends AbstractSmartComponent {
   /* Получает данные формы */
   getData() {
     const form = this.getElement().querySelector(`.card__form`);
-    const formData = new FormData(form);
 
-    return parseFormData(formData);
+    return new FormData(form);
   }
 
   /* Устанавливает обработчик отправки формы */
