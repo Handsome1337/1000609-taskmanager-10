@@ -1,4 +1,6 @@
-import API from './api.js';
+import Api from './api/index.js';
+import Store from './api/store.js';
+import Provider from './api/provider.js';
 import SiteMenuComponent, {MenuItem} from './components/site-menu.js';
 import FilterController from './controllers/filter.js';
 import StatisticsComponent from './components/statistics.js';
@@ -6,7 +8,22 @@ import BoardComponent from './components/board.js';
 import BoardController from './controllers/board.js';
 import TasksModel from './models/tasks.js';
 import {render} from './utils/render.js';
+import 'flatpickr/dist/flatpickr.min.css';
+import 'flatpickr/dist/themes/light.css';
 
+/* Регистрирует сервис-воркер */
+window.addEventListener(`load`, () => {
+  navigator.serviceWorker.register(`/sw.js`)
+    .then(() => {
+      /* Действие в случае успешной регистрации ServiceWorker */
+    }).catch(() => {
+      /* Действие, в случае ошибки при регистрации ServiceWorker */
+    });
+});
+
+const STORE_PREFIX = `taskmanager-localstorage`;
+const STORE_VER = `v1`;
+const STORE_NAME = `${STORE_PREFIX}-${STORE_VER}`;
 const AUTHORIZATION = `Basic dXNlckBwYXNzd29yZAo=`;
 const END_POINT = `https://htmlacademy-es-10.appspot.com/task-manager`;
 
@@ -18,8 +35,10 @@ const dateFrom = (() => {
   return d;
 })();
 
-/* Сохраняет экземпляр API */
-const api = new API(END_POINT, AUTHORIZATION);
+/* Сохраняет экземпляры API, провайдера и хранилища */
+const api = new Api(END_POINT, AUTHORIZATION);
+const store = new Store(STORE_NAME, window.localStorage);
+const apiWithProvider = new Provider(api, store);
 
 /* Сохраняет модель задач и записывает в нее задачи */
 const tasksModel = new TasksModel();
@@ -36,7 +55,7 @@ const filterController = new FilterController(siteMainElement, tasksModel);
 /* Сохраняет компонент доски задач */
 const boardComponent = new BoardComponent();
 /* Сохраняет контроллер доски задач */
-const boardController = new BoardController(boardComponent, tasksModel, api);
+const boardController = new BoardController(boardComponent, tasksModel, apiWithProvider);
 
 /* Добавляет в шапку сайта шаблон меню */
 render(siteHeaderElement, siteMenuComponent);
@@ -72,8 +91,26 @@ siteMenuComponent.setOnChange((menuItem) => {
 });
 
 /* После получения данных отрисовывает компоненты на доску задач */
-api.getTasks()
+apiWithProvider.getTasks()
   .then((tasks) => {
     tasksModel.setTasks(tasks);
     boardController.render();
   });
+
+window.addEventListener(`online`, () => {
+  document.title = document.title.replace(` [offline]`, ``);
+
+  if (!apiWithProvider.getSynchronize()) {
+    apiWithProvider.sync()
+      .then(() => {
+        /* Действие, в случае успешной синхронизации */
+      })
+      .catch(() => {
+        /* Действие, в случае ошибки синхронизации */
+      });
+  }
+});
+
+window.addEventListener(`offline`, () => {
+  document.title += ` [offline]`;
+});
