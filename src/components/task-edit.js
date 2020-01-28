@@ -3,8 +3,6 @@ import {formatDate, formatTime, isRepeating, isOverdueDate} from './../utils/com
 import AbstractSmartComponent from './abstract-smart-component.js';
 import he from 'he';
 import flatpickr from 'flatpickr';
-import 'flatpickr/dist/flatpickr.min.css';
-import 'flatpickr/dist/themes/light.css';
 
 const MIN_DESCRIPTION_LENGTH = 1;
 const MAX_DESCRIPTION_LENGTH = 140;
