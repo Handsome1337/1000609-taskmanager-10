@@ -1,6 +1,9 @@
 import {formatDate, formatTime, isOverdueDate} from './../utils/common.js';
 import AbstractComponent from './abstract-component.js';
 import he from 'he';
+import debounce from 'lodash/debounce';
+
+const DEBOUNCE_TIMEOUT = 500;
 
 /* Возвращает разметку хештега */
 const createHashtagsMarkup = (hashtags) => {
@@ -117,12 +120,12 @@ export default class Task extends AbstractComponent {
   /* Устанавливает обработчик клика на кнопку "Archive" */
   setArchiveButtonClickHandler(handler) {
     this.getElement().querySelector(`.card__btn--archive`)
-      .addEventListener(`click`, handler);
+      .addEventListener(`click`, debounce(handler, DEBOUNCE_TIMEOUT));
   }
 
   /* Устанавливает обработчик клика на кнопку "Favorites" */
   setFavoritesButtonClickHandler(handler) {
     this.getElement().querySelector(`.card__btn--favorites`)
-    .addEventListener(`click`, handler);
+    .addEventListener(`click`, debounce(handler, DEBOUNCE_TIMEOUT));
   }
 }
