@@ -85,7 +85,7 @@ const renderColorsChart = (colorsCtx, tasks) => {
     data: {
       labels: colors,
       datasets: [{
-        date: colors.map((color) => calcUniqCountColor(tasks, color)),
+        data: colors.map((color) => calcUniqCountColor(tasks, color)),
         backgroundColor: colors.map((color) => ColorValue[color])
       }]
     },
